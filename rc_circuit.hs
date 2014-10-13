@@ -34,6 +34,10 @@ _PROGRAM_NAME = "RC Circuit Simulation"
 _PROGRAM_ABOUT = "Simulates an RC circuit using Euler's method and outputs the time constant. " ++
     "Numerical values may be entered in exponential notation, e.g. 22e-6."
 
+-- Program entry point
+-- Grabs the command line arguments then passes
+--   then to the parser 'optionHandler' defined 
+--   below.
 main :: IO ()
 main = do
         args <- getArgs
