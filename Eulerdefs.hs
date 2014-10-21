@@ -1,7 +1,10 @@
 module Eulerdefs
 (rcCircuit,
- timeConstant
+ timeConstant,
+ lrcCircuit
 ) where
+
+import Control.Parallel (par, pseq)
 
 -- Simulation of an RC circuit
 -- The first line is a type signature
@@ -25,10 +28,34 @@ rcCircuit r c q0 dt = reverse $ rcCircuit' r c dt lowerBound [q0]
 rcCircuit' :: Double -> Double -> Double -> Double -> [Double] -> [Double]
 rcCircuit' r c dt lowerBound (q:qs)
     | q < 0          = qs
-    | q < lowerBound = q:qs
+    | q < maxlength = q:qs
     | otherwise = rcCircuit' r c dt lowerBound (qnew:q:qs)
       where
          qnew = q - ((q * dt) / (r * c))
+
+-- Dispatch to set up for the LRC simulation
+lrcCircuit :: Double -> Double -> Double -> Double -> Double -> Double -> [Double]
+lrcCircuit r c l q0 i0 dt = reverse $ lrcCircuit' r c l dt maxlength [(q0, i0)]
+                         where
+                             maxlength = 800
+
+-- Logic for LRC simulation, returns a list of voltages
+-- This function shows off just how easy parallel 
+--   computation is in Haskell. The method `par` executes
+--   the left and right function in parallel and
+--   `pseq` makes sure that everything to the left has
+--   finished before executing the right. Par is optimized
+--   so that it will only run in parallel when it knows that
+--   the time savings are greater than the cost of forking.
+lrcCircuit' :: Double -> Double -> Double -> Double -> Double-> [(Double, Double)] -> [Double]
+lrcCircuit' r c l dt maxlength ((q, i):pairs)
+    | maxlength == 0  = map voltage ((q, i):pairs)
+    | otherwise = qnew `par` inew `pseq` lrcCircuit' r c l dt (maxlength-1) ((qnew, inew):(q, i):pairs)
+      where
+          voltage (charge, _) = charge / c
+          inew = i - (q/(l*c) + (i*r)/l) * dt
+          qnew = q + i*dt
+
 
 -- Calculates the time constant from
 --   a list of values time dt apart
