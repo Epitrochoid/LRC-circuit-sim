@@ -28,7 +28,7 @@ rcCircuit r c q0 dt = reverse $ rcCircuit' r c dt lowerBound [q0]
 rcCircuit' :: Double -> Double -> Double -> Double -> [Double] -> [Double]
 rcCircuit' r c dt lowerBound (q:qs)
     | q < 0          = qs
-    | q < maxlength = q:qs
+    | q < lowerBound = q:qs
     | otherwise = rcCircuit' r c dt lowerBound (qnew:q:qs)
       where
          qnew = q - ((q * dt) / (r * c))
@@ -37,7 +37,7 @@ rcCircuit' r c dt lowerBound (q:qs)
 lrcCircuit :: Double -> Double -> Double -> Double -> Double -> Double -> [Double]
 lrcCircuit r c l q0 i0 dt = reverse $ lrcCircuit' r c l dt maxlength [(q0, i0)]
                          where
-                             maxlength = 800
+                             maxlength = 150
 
 -- Logic for LRC simulation, returns a list of voltages
 -- This function shows off just how easy parallel 
@@ -50,10 +50,10 @@ lrcCircuit r c l q0 i0 dt = reverse $ lrcCircuit' r c l dt maxlength [(q0, i0)]
 lrcCircuit' :: Double -> Double -> Double -> Double -> Double-> [(Double, Double)] -> [Double]
 lrcCircuit' r c l dt maxlength ((q, i):pairs)
     | maxlength == 0  = map voltage ((q, i):pairs)
-    | otherwise = qnew `par` inew `pseq` lrcCircuit' r c l dt (maxlength-1) ((qnew, inew):(q, i):pairs)
+    | otherwise = inew `par` qnew `pseq` (lrcCircuit' r c l dt (maxlength-1) ((qnew, inew):(q, i):pairs))
       where
-          voltage (charge, _) = charge / c
-          inew = i - (q/(l*c) + (i*r)/l) * dt
+          voltage (charge, _) = charge
+          inew = i - ((q/(l*c)) + ((i*r)/l)) * dt
           qnew = q + i*dt
 
 
